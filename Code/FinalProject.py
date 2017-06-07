@@ -18,15 +18,15 @@ listTampaxReview=[]
 
 #Ouverture des fichiers
 fileStopWords=open('stop_words.txt','r')
-fileAlways=open('datasets/reviews_always.csv','r')
+fileAlways=open('datasets_clean/reviews_always.csv','r')
 fileAlwayscsv=csv.reader(fileAlways)
-fileGillette=open('datasets/reviews_gillette.csv','r')
+fileGillette=open('datasets_clean/reviews_gillette.csv','r')
 fileGillettecsv=csv.reader(fileGillette)
-fileOralb=open('datasets/reviews_oral-b.csv','r')
+fileOralb=open('datasets_clean/reviews_oral-b.csv','r')
 fileOralbcsv=csv.reader(fileOralb)
-filePantene=open('datasets/reviews_pantene.csv','r')
+filePantene=open('datasets_clean/reviews_pantene.csv','r')
 filePantenecsv=csv.reader(filePantene)
-fileTampax=open('datasets/reviews_tampax.csv','r')
+fileTampax=open('datasets_clean/reviews_tampax.csv','r')
 fileTampaxcsv=csv.reader(fileTampax)
 
 #Contenu des fichiers en liste
