@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import csv
+from nltk.stem import PorterStemmer
 
 listAlways=[]
 listStopWords=[]
@@ -55,18 +56,48 @@ listTampax.pop(0)
 
 #Mettre les reviews dans une liste
 for row in listAlways:
+    if(row[7].find('\\')):
+        row[7]=row[7].replace('\\','')
+    if(row[7].find('\'')):
+        row[7]=row[7].replace('\'','')
+    if(row[7].find('.')):
+        row[7]=row[7].replace('.','')
+    if(row[7].find('!')):
+        row[7]=row[7].replace('!','')
+    if(row[7].find(':')):
+        row[7]=row[7].replace(':','')
+    if(row[7].find('-')):
+        row[7]=row[7].replace('-','')
+    if(row[7].find('?')):
+        row[7]=row[7].replace('?','')
     listAlwaysReview.append(str(row[7]).upper()) 
 
 for row in listGillette:
+    if(row[7].find('\\')):
+        row[7]=row[7].replace('\\','')
+    if(row[7].find('\'')):
+        row[7]=row[7].replace('\'','')
     listGilletteReview.append(str(row[7]).upper()) 
     
 for row in listOralb:
+    if(row[7].find('\\')):
+        row[7]=row[7].replace('\\','')
+    if(row[7].find('\'')):
+        row[7]=row[7].replace('\'','')
     listOralbReview.append(str(row[7]).upper()) 
 
 for row in listPantene:
+    if(row[7].find('\\')):
+        row[7]=row[7].replace('\\','')
+    if(row[7].find('\'')):
+        row[7]=row[7].replace('\'','')
     listPanteneReview.append(str(row[7]).upper()) 
 
 for row in listTampax:
+    if(row[7].find('\\')):
+        row[7]=row[7].replace('\\','')
+    if(row[7].find('\'')):
+        row[7]=row[7].replace('\'','')
     listTampaxReview.append(str(row[7]).upper())
     
 #Delete stop words
@@ -100,4 +131,34 @@ for row in listTampaxReview:
     reviewTampax=[word for word in reviewTampax if word.upper() not in listStopWords]
     newListTampaxReview.append(" ".join(reviewTampax))
     
-print(newListAlwaysReview)
+#print(newListAlwaysReview)
+
+####################################################################################
+############################### STEMMING PORTER ####################################
+####################################################################################
+
+porter=PorterStemmer()
+
+for j in range (len(newListAlwaysReview)):
+    reviewAlways=newListAlwaysReview[j].split()
+    for i in range(len(reviewAlways)):
+        reviewAlways[i]=porter.stem(reviewAlways[i])
+    newListAlwaysReview[j]=" ".join(reviewAlways)
+    
+#print(newListAlwaysReview)
+
+
+dic={}
+#dic['a']=1
+#dic['a']=dic.get('a')+255
+#print(dic['a'])
+
+for j in range (len(newListAlwaysReview)):
+    reviewAlways=newListAlwaysReview[j].split()
+    for i in range(len(reviewAlways)):
+        if(dic.get(reviewAlways[i])!=None):
+            dic[reviewAlways[i]]=dic.get(reviewAlways[i])+1
+        else:
+            dic[reviewAlways[i]]=1
+
+print(dic.get('buy'))
