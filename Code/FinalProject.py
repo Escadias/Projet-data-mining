@@ -3,55 +3,60 @@
 import csv
 from nltk.stem import PorterStemmer
 
+porter=PorterStemmer()
 
-def openFile(fileName):
-    if fileName == 'stop_words.txt':
-        return open(fileName, 'r')
-    else:
-        return open('datasets_clean/' + fileName, 'r')
+def replacePonctuation(review):
+    if(review.find('.')):
+        review=review.replace('.',' ')
+    if(review.find(',')):
+        review=review.replace(',',' ')
+    if(review.find('!')):
+        review=review.replace('!',' ')
+    if(review.find('?')):
+        review=review.replace('?',' ')
+    if(review.find(':')):
+        review=review.replace(':',' ')
+    if(review.find('...')):
+        review=review.replace('...',' ')
+    if(review.find(r"\'")):
+        review=review.replace(r"\'",'')
+    if(review.find('-')):
+        review=review.replace('-',' ')
+    if(review.find('\\')):
+        review=review.replace('\\',' ')
+    if(review.find('$')):
+        review=review.replace('$','')
+    if(review.find('&')):
+        review=review.replace('&','')
+    if(review.find('(')):
+        review=review.replace('(','')
+    if(review.find(')')):
+        review=review.replace(')','')
+    return review
 
-def loadFileRows(file, isStopWords):
-    rowsList = []
-    if isStopWords:
-        for row in file:
-            rowsList.append(str(row.rstrip('\n')).upper())
-    else:
-        for row in file:
-            rowsList.append(row)
-        rowsList.pop(0)
+def reviewList(listFile):
+    listReview=[]
+    for row in listFile:
+        listReview.append(str(replacePonctuation(row[7])).lower())
+    return listReview    
 
-    return rowsList
-
-def loadReviews(rowsList):
-    reviewList = []
-    for row in rowsList:
-        if(row[7].find('\\')):
-            row[7]=row[7].replace('\\','')
-        if(row[7].find('\'')):
-            row[7]=row[7].replace('\'','')
-        if(row[7].find('.')):
-            row[7]=row[7].replace('.','')
-        if(row[7].find('!')):
-            row[7]=row[7].replace('!','')
-        if(row[7].find(':')):
-            row[7]=row[7].replace(':','')
-        if(row[7].find('-')):
-            row[7]=row[7].replace('-','')
-        if(row[7].find('?')):
-            row[7]=row[7].replace('?','')
-        reviewList.append(str(row[7]).upper())
-
-    return reviewList
-
-def deleteStopWordsInReviewList(reviewsList, stopWordsList):
-    noStopWordsReviewsList=[]
-    for row in reviewsList:
-        reviewsList=row.split()
-        reviewsList=[word for word in reviewsList if word.upper() not in stopWordsList]
-        noStopWordsReviewsList.append(" ".join(reviewsList))
-    return noStopWordsReviewsList
+def deleteStopWords(listReview, listStopWords):
+    newListReview=[]
+    for row in listReview:
+        review=row.split()
+        review=[word for word in review if word.lower() not in listStopWords]
+        newListReview.append(" ".join(review))
+    return newListReview
 
 
+def modifyWordPorter(listReview):
+    for j in range (len(listReview)):
+        review=listReview[j].split()
+        for i in range(len(review)):
+            review[i]=porter.stem(review[i])
+        listReview[j]=" ".join(review)
+    return listReview
+        
 listAlways=[]
 listStopWords=[]
 listGillette=[]
@@ -59,11 +64,7 @@ listOralb=[]
 listPantene=[]
 listTampax=[]
 
-listAlwaysReview=[]
-listGilletteReview=[]
-listOralbReview=[]
-listPanteneReview=[]
-listTampaxReview=[]
+
 
 #Ouverture des fichiers
 fileStopWords=open('stop_words.txt','r')
@@ -80,7 +81,7 @@ fileTampaxcsv=csv.reader(fileTampax)
 
 #Contenu des fichiers en liste
 for row in fileStopWords:
-    listStopWords.append(str(row.rstrip('\n')).upper())
+    listStopWords.append(str(row.rstrip('\n')).lower())
 
 for row in fileAlwayscsv:
     listAlways.append(row) 
@@ -104,103 +105,36 @@ listPantene.pop(0)
 listTampax.pop(0)
 
 #Mettre les reviews dans une liste
-for row in listAlways:
-    if(row[7].find('\\')):
-        row[7]=row[7].replace('\\','')
-    if(row[7].find('\'')):
-        row[7]=row[7].replace('\'','')
-    if(row[7].find('.')):
-        row[7]=row[7].replace('.','')
-    if(row[7].find('!')):
-        row[7]=row[7].replace('!','')
-    if(row[7].find(':')):
-        row[7]=row[7].replace(':','')
-    if(row[7].find('-')):
-        row[7]=row[7].replace('-','')
-    if(row[7].find('?')):
-        row[7]=row[7].replace('?','')
-    listAlwaysReview.append(str(row[7]).upper()) 
+listAlwaysReview=reviewList(listAlways)
+listGilletteReview=reviewList(listGillette)
+listOralbReview=reviewList(listOralb)
+listPanteneReview=reviewList(listPantene)
+listTampaxReview=reviewList(listTampax)
 
-for row in listGillette:
-    if(row[7].find('\\')):
-        row[7]=row[7].replace('\\','')
-    if(row[7].find('\'')):
-        row[7]=row[7].replace('\'','')
-    listGilletteReview.append(str(row[7]).upper()) 
-    
-for row in listOralb:
-    if(row[7].find('\\')):
-        row[7]=row[7].replace('\\','')
-    if(row[7].find('\'')):
-        row[7]=row[7].replace('\'','')
-    listOralbReview.append(str(row[7]).upper()) 
-
-for row in listPantene:
-    if(row[7].find('\\')):
-        row[7]=row[7].replace('\\','')
-    if(row[7].find('\'')):
-        row[7]=row[7].replace('\'','')
-    listPanteneReview.append(str(row[7]).upper()) 
-
-for row in listTampax:
-    if(row[7].find('\\')):
-        row[7]=row[7].replace('\\','')
-    if(row[7].find('\'')):
-        row[7]=row[7].replace('\'','')
-    listTampaxReview.append(str(row[7]).upper())
     
 #Delete stop words
-newListAlwaysReview=[]
-for row in listAlwaysReview:
-    reviewAlways=row.split()
-    reviewAlways=[word for word in reviewAlways if word.upper() not in listStopWords]
-    newListAlwaysReview.append(" ".join(reviewAlways))
+newListAlwaysReview=deleteStopWords(listAlwaysReview, listStopWords)
+newListGilletteReview=deleteStopWords(listGilletteReview, listStopWords)
+newListOralbReview=deleteStopWords(listOralbReview, listStopWords)
+newListPanteneReview=deleteStopWords(listPanteneReview, listStopWords)
+newListTampaxReview=deleteStopWords(listTampaxReview, listStopWords)
     
-newListGilletteReview=[]
-for row in listGilletteReview:
-    reviewGillette=row.split()
-    reviewGillette=[word for word in reviewGillette if word.upper() not in listStopWords]
-    newListGilletteReview.append(" ".join(reviewGillette))
-
-newListOralbReview=[]
-for row in listOralbReview:
-    reviewOralb=row.split()
-    reviewOralb=[word for word in reviewOralb if word.upper() not in listStopWords]
-    newListOralbReview.append(" ".join(reviewOralb))
-    
-newListPanteneReview=[]
-for row in listPanteneReview:
-    reviewPantene=row.split()
-    reviewPantene=[word for word in reviewPantene if word.upper() not in listStopWords]
-    newListPanteneReview.append(" ".join(reviewPantene))
-    
-newListTampaxReview=[]
-for row in listTampaxReview:
-    reviewTampax=row.split()
-    reviewTampax=[word for word in reviewTampax if word.upper() not in listStopWords]
-    newListTampaxReview.append(" ".join(reviewTampax))
-    
-#print(newListAlwaysReview)
 
 ####################################################################################
 ############################### STEMMING PORTER ####################################
 ####################################################################################
 
-porter=PorterStemmer()
+listAlwaysReviewStemming=modifyWordPorter(newListAlwaysReview)
+listGilletteReviewStemming=modifyWordPorter(newListGilletteReview)
+listOralbReviewStemming=modifyWordPorter(newListOralbReview)
+listPanteneReviewStemming=modifyWordPorter(newListPanteneReview)
+listTampaxReviewStemming=modifyWordPorter(newListTampaxReview)
 
-for j in range (len(newListAlwaysReview)):
-    reviewAlways=newListAlwaysReview[j].split()
-    for i in range(len(reviewAlways)):
-        reviewAlways[i]=porter.stem(reviewAlways[i])
-    newListAlwaysReview[j]=" ".join(reviewAlways)
-    
-#print(newListAlwaysReview)
-
+####################################################################################
+############################# Bag representation ###################################
+####################################################################################
 
 dic={}
-#dic['a']=1
-#dic['a']=dic.get('a')+255
-#print(dic['a'])
 
 for j in range (len(newListAlwaysReview)):
     reviewAlways=newListAlwaysReview[j].split()
@@ -210,4 +144,3 @@ for j in range (len(newListAlwaysReview)):
         else:
             dic[reviewAlways[i]]=1
 
-print(dic.get('buy'))
