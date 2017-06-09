@@ -3,6 +3,55 @@
 import csv
 from nltk.stem import PorterStemmer
 
+
+def openFile(fileName):
+    if fileName == 'stop_words.txt':
+        return open(fileName, 'r')
+    else:
+        return open('datasets_clean/' + fileName, 'r')
+
+def loadFileRows(file, isStopWords):
+    rowsList = []
+    if isStopWords:
+        for row in file:
+            rowsList.append(str(row.rstrip('\n')).upper())
+    else:
+        for row in file:
+            rowsList.append(row)
+        rowsList.pop(0)
+
+    return rowsList
+
+def loadReviews(rowsList):
+    reviewList = []
+    for row in rowsList:
+        if(row[7].find('\\')):
+            row[7]=row[7].replace('\\','')
+        if(row[7].find('\'')):
+            row[7]=row[7].replace('\'','')
+        if(row[7].find('.')):
+            row[7]=row[7].replace('.','')
+        if(row[7].find('!')):
+            row[7]=row[7].replace('!','')
+        if(row[7].find(':')):
+            row[7]=row[7].replace(':','')
+        if(row[7].find('-')):
+            row[7]=row[7].replace('-','')
+        if(row[7].find('?')):
+            row[7]=row[7].replace('?','')
+        reviewList.append(str(row[7]).upper())
+
+    return reviewList
+
+def deleteStopWordsInReviewList(reviewsList, stopWordsList):
+    noStopWordsReviewsList=[]
+    for row in reviewsList:
+        reviewsList=row.split()
+        reviewsList=[word for word in reviewsList if word.upper() not in stopWordsList]
+        noStopWordsReviewsList.append(" ".join(reviewsList))
+    return noStopWordsReviewsList
+
+
 listAlways=[]
 listStopWords=[]
 listGillette=[]
