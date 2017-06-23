@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
-import csv
+#import csv
 from nltk.stem import PorterStemmer
 #from collections import OrderedDict
 import pandas
 import re
-import tensorflow as tf
+#import tensorflow as tf
 
 porter=PorterStemmer()
 
@@ -73,16 +73,23 @@ listAllDocument=[]
 #Ouverture des fichiers
 fileStopWords=open('stop_words.txt','r')
 fileAlways=open('datasets_clean/reviews_always.csv','r')
-fileAlwayscsv=csv.reader(fileAlways)
+fileAlwayscsv=pandas.read_csv(fileAlways)
 fileGillette=open('datasets_clean/reviews_gillette.csv','r')
-fileGillettecsv=csv.reader(fileGillette)
+fileGillettecsv=pandas.read_csv(fileGillette)
 fileOralb=open('datasets_clean/reviews_oral-b.csv','r')
-fileOralbcsv=csv.reader(fileOralb)
+fileOralbcsv=pandas.read_csv(fileOralb)
 filePantene=open('datasets_clean/reviews_pantene.csv','r')
-filePantenecsv=csv.reader(filePantene)
+filePantenecsv=pandas.read_csv(filePantene)
 fileTampax=open('datasets_clean/reviews_tampax.csv','r')
-fileTampaxcsv=csv.reader(fileTampax)
+fileTampaxcsv=pandas.read_csv(fileTampax)
 
+frames = [fileAlwayscsv, fileGillettecsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
+alldataFrame = pandas.concat(frames)
+nbLearning = round(len(alldataFrame)*2/3)
+dataFrameLearning = alldataFrame[:nbLearning]
+dataFrameTesting = alldataFrame[nbLearning:]
+
+"""
 #Contenu des fichiers en liste
 for row in fileStopWords:
     listStopWords.append(str(row.rstrip('\n')).lower())
@@ -115,7 +122,7 @@ listOralbReview=reviewList(listOralb)
 listPanteneReview=reviewList(listPantene)
 listTampaxReview=reviewList(listTampax)
 
-    
+  
 #Delete stop words
 newListAlwaysReview=deleteStopWords(listAlwaysReview, listStopWords)
 newListGilletteReview=deleteStopWords(listGilletteReview, listStopWords)
@@ -164,4 +171,4 @@ matrixX=fillX(xDataFrame, listAllDocument)
 print(matrixX)
 
 yDataFrame=pandas.DataFrame(index=range(len(listAllDocument)), columns=range(5))
-matrixY=yDataFrame.fillna(0)
+matrixY=yDataFrame.fillna(0)"""
