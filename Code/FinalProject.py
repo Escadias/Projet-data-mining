@@ -85,6 +85,7 @@ fileTampaxcsv=pandas.read_csv(fileTampax)
 
 frames = [fileAlwayscsv, fileGillettecsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
 alldataFrame = pandas.concat(frames)
+alldataFrame = alldataFrame.sample(frac= 1)
 nbLearning = round(len(alldataFrame)*2/3)
 dataFrameLearning = alldataFrame[:nbLearning]
 dataFrameTesting = alldataFrame[nbLearning:]
