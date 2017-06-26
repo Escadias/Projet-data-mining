@@ -5,70 +5,49 @@ from nltk.stem import PorterStemmer
 #from collections import OrderedDict
 import pandas
 import re
-#import tensorflow as tf
+import numpy
+import math
+import tensorflow as tf
+from sklearn.naive_bayes import MultinomialNB
+#from sklearn.naive_bayes import GaussianNB 
 
 porter=PorterStemmer()
-
                 
-def fillDictionary(dic, listReview):
-    for j in range (len(listReview)):
-        review=listReview[j].split()
-        for i in range(len(review)):
-            if(dic.get(review[i])!=None):
-                dic[review[i]]=dic.get(review[i])+1
+
+
+def replacePonctuation(listAllReview):
+    for i in range(len(listAllReview)):
+        listAllReview[i]=str(re.sub("[^a-zA-Z]"," ",str(listAllReview[i])))
+    return listAllReview
+   
+def fillDictionary(listAllReview):
+    dic={}
+    for review in listAllReview:
+        words=review.split()
+        for word in words:
+            if(dic.get(word)!=None):
+                dic[word]=dic.get(word)+1
             else:
-                dic[review[i]]=1
+                dic[word]=1
     return dic
 
-def createDefAppendAllReview(listAllReview, listReview):
-    for review in listReview:
-        listAllReview.append(review)
+
+
+def deleteStopWords(listAllReview, listStopWords):
+    for i in range(len(listAllReview)):
+        review=str(listAllReview[i]).split()
+        review=[word.lower() for word in review if word.lower() not in listStopWords]
+        listAllReview[i]=" ".join(review)
     return listAllReview
 
-def fillX(xDataFrame, listAllReviews):
-    for i in range(len(listAllReviews)):
-        listWords=listAllReviews[i].split()
-        for word in listWords:
-            #print(xDataFrame.at[word,xDataFrame[i]])
-            xDataFrame[word][i]+=1
-    return xDataFrame 
-
-def replacePonctuation(review):
-    review=re.sub("[^a-zA-Z]"," ",review)
-    return review
-
-def reviewList(listFile):
-    listReview=[]
-    for row in listFile:
-        listReview.append(str(replacePonctuation(row[7])).lower())
-    return listReview    
-
-def deleteStopWords(listReview, listStopWords):
-    newListReview=[]
-    for row in listReview:
-        review=row.split()
-        review=[word for word in review if word.lower() not in listStopWords]
-        newListReview.append(" ".join(review))
-    return newListReview
 
 
-def modifyWordPorter(listReviewOrig):
-    listReview=listReviewOrig
-    for j in range (len(listReview)):
-        review=listReview[j].split()
-        for i in range(len(review)):
-            review[i]=porter.stem(review[i])
-        listReview[j]=" ".join(review)
-    return listReview
+
+
         
-listAlways=[]
+    
+        
 listStopWords=[]
-listGillette=[]
-listOralb=[]
-listPantene=[]
-listTampax=[]
-listAllDocument=[]
-
 
 #Ouverture des fichiers
 fileStopWords=open('stop_words.txt','r')
@@ -86,90 +65,171 @@ fileTampaxcsv=pandas.read_csv(fileTampax)
 frames = [fileAlwayscsv, fileGillettecsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
 alldataFrame = pandas.concat(frames)
 alldataFrame = alldataFrame.sample(frac= 1)
-nbLearning = round(len(alldataFrame)*2/3)
-dataFrameLearning = alldataFrame[:nbLearning]
-dataFrameTesting = alldataFrame[nbLearning:]
+listAllReview=list(alldataFrame['review'].astype(str))
+listAllRating=list(alldataFrame['user_rating'].astype(int))
 
-"""
-#Contenu des fichiers en liste
 for row in fileStopWords:
     listStopWords.append(str(row.rstrip('\n')).lower())
 
-for row in fileAlwayscsv:
-    listAlways.append(row) 
+listAllReview=replacePonctuation(listAllReview)
+listAllReview=deleteStopWords(listAllReview, listStopWords)
+nbLearning = round(len(listAllReview)*2/3)
 
-for row in fileGillettecsv:
-    listGillette.append(row) 
- 
-for row in fileOralbcsv:
-    listOralb.append(row) 
+reviewLearning=listAllReview[:nbLearning]
+rateLearning=listAllRating[:nbLearning]
+reviewTesting=listAllReview[nbLearning:]
+rateTesting=listAllRating[nbLearning:]
 
-for row in filePantenecsv:
-    listPantene.append(row)
-  
-for row in fileTampaxcsv:
-    listTampax.append(row)
+dic=fillDictionary(listAllReview)
+dicLearn=fillDictionary(reviewLearning)
+dicTest=fillDictionary(reviewTesting)
 
-listAlways.pop(0)
-listGillette.pop(0)
-listOralb.pop(0)
-listPantene.pop(0)
-listTampax.pop(0)
+xDataFrame=pandas.DataFrame(index=range(len(listAllReview)), columns=dic.keys())
+xDataFrame=xDataFrame.fillna(0)
 
-#Mettre les reviews dans une liste
-listAlwaysReview=reviewList(listAlways)
-listGilletteReview=reviewList(listGillette)
-listOralbReview=reviewList(listOralb)
-listPanteneReview=reviewList(listPantene)
-listTampaxReview=reviewList(listTampax)
+yDataFrame=pandas.DataFrame(index=range(len(listAllReview)), columns=range(5))
+yDataFrame=yDataFrame.fillna(0)
 
-  
-#Delete stop words
-newListAlwaysReview=deleteStopWords(listAlwaysReview, listStopWords)
-newListGilletteReview=deleteStopWords(listGilletteReview, listStopWords)
-newListOralbReview=deleteStopWords(listOralbReview, listStopWords)
-newListPanteneReview=deleteStopWords(listPanteneReview, listStopWords)
-newListTampaxReview=deleteStopWords(listTampaxReview, listStopWords)
+def fillX(dataFrame, listAllReview):
+    for i in range (len(listAllReview)):
+        for word in listAllReview[i].split():
+            dataFrame[word][i]+=1
+    return dataFrame
+
+
+matrixX=fillX(xDataFrame, listAllReview)
+
+def fillY(dataFrame, listAllRating):
+    for i in range(len(listAllRating)):
+        dataFrame[listAllRating[i]-1][i]=1
+    return dataFrame 
+
+matrixY=fillY(yDataFrame, listAllRating)
+
+
+matrixXLearn=matrixX[:nbLearning]
+matrixXTest=matrixX[nbLearning:]
+
+from sklearn.naive_bayes import GaussianNB
+model=GaussianNB().fit(matrixXLearn[list(matrixX)], rateLearning)
+predicted=model.predict(matrixXTest)
+
+def verifyPredict(predicted, rateTesting):
+    goodClassification=0
+    badClassification=0
+    nbClassification=0
+    for i in range (len(predicted)):
+        nbClassification+=1
+        if(predicted[i]==rateTesting[i]):
+            goodClassification+=1
+        else:
+            badClassification+=1
+    return [goodClassification/nbClassification, badClassification/nbClassification]
+
+listPredict=verifyPredict(predicted, rateTesting)
+print(listPredict)
+print(matrixX.shape)
+
+
+
+
+
+
+
+#import gensim
+#from gensim.keyedvectors import KeyedVectors
+#word_vectors=KeyedVectors.load_word2vec_format('word2vec.txt', binary=False)
+#print(word_vectors[0])
+
+#model=gensim.models.KeyedVectors.load_word2vec_format('word2vec.txt', binary=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#alldataFrame=replacePonctuation(alldataFrame)
+#alldataFrame=deleteStopWords(alldataFrame, listStopWords)
+#dic=fillDictionary(alldataFrame)
+#print(dic)
 
     
 
-####################################################################################
-############################### STEMMING PORTER ####################################
-####################################################################################
 
-listAlwaysReviewStemming=modifyWordPorter(newListAlwaysReview)
-listGilletteReviewStemming=modifyWordPorter(newListGilletteReview)
-listOralbReviewStemming=modifyWordPorter(newListOralbReview)
-listPanteneReviewStemming=modifyWordPorter(newListPanteneReview)
-listTampaxReviewStemming=modifyWordPorter(newListTampaxReview)
 
-####################################################################################
-############################# Bag representation ###################################
-####################################################################################
 
-#dic=OrderedDict()
-dic={}
-dic=fillDictionary(dic, listAlwaysReviewStemming)
-#dic=fillDictionary(dic, listGilletteReviewStemming)
-#dic=fillDictionary(dic, listOralbReviewStemming)
-#dic=fillDictionary(dic, listPanteneReviewStemming)
-#dic=fillDictionary(dic, listTampaxReviewStemming)
-listWords=dic.keys()
 
-listAllDocument=createDefAppendAllReview(listAllDocument, listAlwaysReviewStemming)
-#listAllDocument=createDefAppendAllReview(listAllDocument, listGilletteReviewStemming)
-#listAllDocument=createDefAppendAllReview(listAllDocument, listOralbReviewStemming)
-#listAllDocument=createDefAppendAllReview(listAllDocument, listPanteneReviewStemming)
-#listAllDocument=createDefAppendAllReview(listAllDocument, listTampaxReviewStemming)
-#print(listAllDocument)
+#dicLearnX=fillDictionary(dataFrameLearning)
+#xDataFrameLearn=pandas.DataFrame(index=range(max(numpy.shape(dataFrameLearning))), columns=dicLearnX.keys())
+#xDataFrameLearn=xDataFrameLearn.fillna(0)
+#matrixXLearn=fillX(xDataFrameLearn, dataFrameLearning)
+#yDataFrameLearn=pandas.DataFrame(index=range(max(numpy.shape(dataFrameLearning))), columns=range(5))
+#yDataFrameLearn=yDataFrameLearn.fillna(0)
+#matrixYLearn=fillY(yDataFrameLearn, dataFrameLearning)
+#
+#dicTestX=fillDictionary(dataFrameTesting)
+#xDataFrameTest=pandas.DataFrame(index=range(max(numpy.shape(dataFrameTesting))), columns=dicTestX.keys())
+#xDataFrameTest=xDataFrameTest.fillna(0)
+#matrixXTest=fillX(xDataFrameTest, dataFrameTesting)
+#yDataFrameTest=pandas.DataFrame(index=range(max(numpy.shape(dataFrameTesting))), columns=range(5))
+#yDataFrameTest=yDataFrameTest.fillna(0)
+#matrixYTest=fillY(yDataFrameTest, dataFrameTesting)
 
-xDataFrame=pandas.DataFrame(index=range(len(listAllDocument)), columns=listWords)
-xDataFrame=xDataFrame.fillna(0)
-#print(xDataFrame)
-#print(dic)
 
-matrixX=fillX(xDataFrame, listAllDocument)
-print(matrixX)
 
-yDataFrame=pandas.DataFrame(index=range(len(listAllDocument)), columns=range(5))
-matrixY=yDataFrame.fillna(0)"""
+
+
+
+#clf=MultinomialNB().fit(numpy.transpose(matrixXLearn), matrixYLearn)
+#predictedNaiveBayes=clf.predict(numpy.transpose(matrixXTest))
+#print(predictedNaiveBayes)
+
+
+#FAIRE UNE REGRESSION
+
+#model = GaussianNB()
+#model.fit(da)
+
+#nbWords=countWordsReview(dataFrameLearning)
+#probScore1=computeProbScore(dataFrameLearning, 1)/nbWords
+#probScore2=computeProbScore(dataFrameLearning, 2)/nbWords
+#probScore3=computeProbScore(dataFrameLearning, 3)/nbWords
+#probScore4=computeProbScore(dataFrameLearning, 4)/nbWords
+#probScore5=computeProbScore(dataFrameLearning, 5)/nbWords
+#
+#dicLearningScore1=fillDictionaryScore(dataFrameLearning, 1)
+#dicLearningScore2=fillDictionaryScore(dataFrameLearning, 2)
+#dicLearningScore3=fillDictionaryScore(dataFrameLearning, 3)
+#dicLearningScore4=fillDictionaryScore(dataFrameLearning, 4)
+#dicLearningScore5=fillDictionaryScore(dataFrameLearning, 5)
+#
+#
+#
+#nbWordsScore1=countWordsScore(dicLearningScore1)
+#nbWordsScore2=countWordsScore(dicLearningScore2)
+#nbWordsScore3=countWordsScore(dicLearningScore3)
+#nbWordsScore4=countWordsScore(dicLearningScore4)
+#nbWordsScore5=countWordsScore(dicLearningScore5)
+#
+#dicProbScore1=computeProbWords(dicLearningScore1, nbWordsScore1)
+#dicProbScore2=computeProbWords(dicLearningScore2, nbWordsScore2)
+#dicProbScore3=computeProbWords(dicLearningScore3, nbWordsScore3)
+#dicProbScore4=computeProbWords(dicLearningScore4, nbWordsScore4)
+#dicProbScore5=computeProbWords(dicLearningScore5, nbWordsScore5)
+
+
