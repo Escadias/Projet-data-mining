@@ -6,6 +6,7 @@
 import pandas
 import re
 import numpy
+
 import math
 #import tensorflow as tf
 from sklearn.naive_bayes import MultinomialNB
@@ -13,6 +14,10 @@ from sklearn.neural_network import MLPClassifier
 from gensim.models import word2vec
 import logging
 from StemmingHelper import StemmingHelper
+
+
+
+
 #from sklearn.naive_bayes import GaussianNB 
 
 
@@ -47,6 +52,7 @@ def deleteStopWords(listAllReview, listStopWords):
 
 
 
+
 def stemmingReviews(listAllReview):
     for i in range(len(listAllReview)):
         review=str(listAllReview[i]).split()
@@ -54,9 +60,19 @@ def stemmingReviews(listAllReview):
         listAllReview[i]=" ".join(review)    
     return listAllReview
     
-        
-    
-        
+
+# def modifyWordPorter(listAllReview):
+#     listReview=listAllReview
+#     for j in range (len(listReview)):
+#         review=listReview[j].split()
+#         for i in range(len(review)):
+#             review[i]=porter.stem(review[i])
+#         listReview[j]=" ".join(review)
+#     return listReview
+
+
+            
+
 listStopWords=[]
 
 #Ouverture des fichiers
@@ -82,7 +98,10 @@ listAllRating=list(alldataFrame['user_rating'].astype(int))
 for row in fileStopWords:
     listStopWords.append(str(row.rstrip('\n')).lower())
 
+
+
 listAllReview=replacePonctuation(listAllReview)
+#listAllReview=modifyWordPorter(listAllReview)
 listAllReview=deleteStopWords(listAllReview, listStopWords)
 listAllReview = stemmingReviews(listAllReview)
 nbLearning = round(len(listAllReview)*2/3)
@@ -121,11 +140,11 @@ matrixY=fillY(yDataFrame, listAllRating)
 
 matrixXLearn=matrixX[:nbLearning]
 matrixXTest=matrixX[nbLearning:]
-matrixYLearn=matrixY[:nbLearning]
 
 #from sklearn.naive_bayes import GaussianNB
 #model=GaussianNB().fit(matrixXLearn[list(matrixX)], rateLearning)
 #predicted=model.predict(matrixXTest)
+
 
 #def verifyPredict(predicted, rateTesting):
 #    goodClassification=0
@@ -174,90 +193,37 @@ print("Number of mislabeled points out of a total %d points : %d , efficiency : 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#alldataFrame=replacePonctuation(alldataFrame)
-#alldataFrame=deleteStopWords(alldataFrame, listStopWords)
-#dic=fillDictionary(alldataFrame)
-#print(dic)
-
-    
-
-
-
-
-
-#dicLearnX=fillDictionary(dataFrameLearning)
-#xDataFrameLearn=pandas.DataFrame(index=range(max(numpy.shape(dataFrameLearning))), columns=dicLearnX.keys())
-#xDataFrameLearn=xDataFrameLearn.fillna(0)
-#matrixXLearn=fillX(xDataFrameLearn, dataFrameLearning)
-#yDataFrameLearn=pandas.DataFrame(index=range(max(numpy.shape(dataFrameLearning))), columns=range(5))
-#yDataFrameLearn=yDataFrameLearn.fillna(0)
-#matrixYLearn=fillY(yDataFrameLearn, dataFrameLearning)
-#
-#dicTestX=fillDictionary(dataFrameTesting)
-#xDataFrameTest=pandas.DataFrame(index=range(max(numpy.shape(dataFrameTesting))), columns=dicTestX.keys())
-#xDataFrameTest=xDataFrameTest.fillna(0)
-#matrixXTest=fillX(xDataFrameTest, dataFrameTesting)
-#yDataFrameTest=pandas.DataFrame(index=range(max(numpy.shape(dataFrameTesting))), columns=range(5))
-#yDataFrameTest=yDataFrameTest.fillna(0)
-#matrixYTest=fillY(yDataFrameTest, dataFrameTesting)
-
-
-
-
-
-
-#clf=MultinomialNB().fit(numpy.transpose(matrixXLearn), matrixYLearn)
-#predictedNaiveBayes=clf.predict(numpy.transpose(matrixXTest))
-#print(predictedNaiveBayes)
-
-
-#FAIRE UNE REGRESSION
-
-#model = GaussianNB()
-#model.fit(da)
-
-#nbWords=countWordsReview(dataFrameLearning)
-#probScore1=computeProbScore(dataFrameLearning, 1)/nbWords
-#probScore2=computeProbScore(dataFrameLearning, 2)/nbWords
-#probScore3=computeProbScore(dataFrameLearning, 3)/nbWords
-#probScore4=computeProbScore(dataFrameLearning, 4)/nbWords
-#probScore5=computeProbScore(dataFrameLearning, 5)/nbWords
-#
-#dicLearningScore1=fillDictionaryScore(dataFrameLearning, 1)
-#dicLearningScore2=fillDictionaryScore(dataFrameLearning, 2)
-#dicLearningScore3=fillDictionaryScore(dataFrameLearning, 3)
-#dicLearningScore4=fillDictionaryScore(dataFrameLearning, 4)
-#dicLearningScore5=fillDictionaryScore(dataFrameLearning, 5)
+#from sklearn.naive_bayes import MultinomialNB
+#model=MultinomialNB().fit(matrixXLearn[list(matrixX)], rateLearning)
+#predicted=model.predict(matrixXTest)
 #
 #
 #
-#nbWordsScore1=countWordsScore(dicLearningScore1)
-#nbWordsScore2=countWordsScore(dicLearningScore2)
-#nbWordsScore3=countWordsScore(dicLearningScore3)
-#nbWordsScore4=countWordsScore(dicLearningScore4)
-#nbWordsScore5=countWordsScore(dicLearningScore5)
 #
-#dicProbScore1=computeProbWords(dicLearningScore1, nbWordsScore1)
-#dicProbScore2=computeProbWords(dicLearningScore2, nbWordsScore2)
-#dicProbScore3=computeProbWords(dicLearningScore3, nbWordsScore3)
-#dicProbScore4=computeProbWords(dicLearningScore4, nbWordsScore4)
-#dicProbScore5=computeProbWords(dicLearningScore5, nbWordsScore5)
+#def verifyPredict(predicted, rateTesting):
+#    goodClassification=0
+#    badClassification=0
+#    nbClassification=0
+#    for i in range (len(predicted)):
+#        nbClassification+=1
+#        if(predicted[i]==rateTesting[i]):
+#            goodClassification+=1
+#        else:
+#            badClassification+=1
+#    return [goodClassification/nbClassification, badClassification/nbClassification]
+#
+#
+#listPredict=verifyPredict(predicted, rateTesting)
+#print(listPredict)
 
 
+from gensim.models.keyedvectors import KeyedVectors
+wordVectors=KeyedVectors.load_word2vec_format('word2vec.txt', binary=False)
+print('lkshjflkguhekurhhf' in wordVectors.vocab.keys())
+
+def fillZ(dic, wordVectors, listWords):
+    for i in range(len(listWords)):
+        if(listWords[i] in wordVectors.vocab.keys()):
+            dic[listWords[i]]=wordVectors[listWords[i]]
+    return dic
 
