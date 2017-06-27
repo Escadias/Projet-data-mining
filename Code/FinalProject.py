@@ -120,18 +120,17 @@ listStopWords=[]
 
 #Ouverture des fichiers
 fileStopWords=open('stop_words.txt','r')
-fileAlwayscsv=pandas.read_csv('datasets_clean2/reviews_always.csv',sep='\t', encoding='latin-1')
-#fileGillettecsv=pandas.read_csv('datasets_clean2/reviews_gillette.csv',sep='\t', encoding='latin-1')
-fileOralbcsv=pandas.read_csv('datasets_clean2/reviews_oral-b.csv',sep='\t', encoding='latin-1')
-filePantenecsv=pandas.read_csv('datasets_clean2/reviews_pantene.csv',sep='\t', encoding='latin-1')
-fileTampaxcsv=pandas.read_csv('datasets_clean2/reviews_tampax.csv',sep='\t', encoding='latin-1')
+fileAlwayscsv=pandas.read_csv('datasets_clean/reviews_always.csv')#,sep='\t', encoding='latin-1')
+fileGillettecsv=pandas.read_csv('datasets_clean/reviews_gillette.csv')#,sep='\t', encoding='latin-1')
+fileOralbcsv=pandas.read_csv('datasets_clean/reviews_oral-b.csv')#,sep='\t', encoding='latin-1')
+filePantenecsv=pandas.read_csv('datasets_clean/reviews_pantene.csv')#,sep='\t', encoding='latin-1')
+fileTampaxcsv=pandas.read_csv('datasets_clean/reviews_tampax.csv')#,sep='\t', encoding='latin-1')
 
 
-frames = [fileAlwayscsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
-#frames = [fileAlwayscsv, fileGillettecsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
+#frames = [fileAlwayscsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
+frames = [fileAlwayscsv, fileGillettecsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
 alldataFrame = pandas.concat(frames)
 alldataFrame = alldataFrame.sample(frac= 1)
-
 listAllReview=list(alldataFrame['review'].astype(str))
 listAllRating=list(alldataFrame['user_rating'].astype(int))
 
