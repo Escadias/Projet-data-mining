@@ -19,7 +19,7 @@ for fileName in listFiles:
 	for line in file:
 		if line[0].isdigit() or lineCounter == 0 :
 			fileClean.write(line)
-		print(line[0:7],"\t",lineCounter,"\t",fileName)
+		#print(line[0:7],"\t",lineCounter,"\t",fileName)
 		lineCounter+=1
 
 	file.close()
