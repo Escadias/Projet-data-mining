@@ -205,25 +205,41 @@ baseLine(alldataFrame)
 
 ############################Neural Network########################
 
+alphas = numpy.linspace(1e-05,1e-03, 3)
+results_MLP_alpha = open('results_MLP_alpha.csv', 'w')
+results_MLP_Z_alpha = open('results_MLP_Z_alpha.csv', 'w')
+results_MLP_alpha.write('alpha,success_rate\n')
+results_MLP_Z_alpha.write('alpha,success_rate\n')
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-clf = MLPClassifier(solver='sgd', alpha=1e-3,
+for alpha in numpy.nditer(alphas):
+    print(alpha)
+    clf = MLPClassifier(solver='sgd', alpha=alpha,
                          hidden_layer_sizes=(100,100), random_state=1)
-clf.fit(matrixXLearn, rateLearning)
+    clf.fit(matrixXLearn, rateLearning)                         
     
-predict = clf.predict(matrixXTest)
-print("Number of mislabeled points out of a total %d points : %d , efficiency : "
-          % (matrixXTest.shape[0],(rateTesting != predict).sum()), ((rateTesting == predict).sum())/matrixXTest.shape[0]*100)
-
-
-clf = MLPClassifier(solver='sgd', alpha=1e-3,
+    predict = clf.predict(matrixXTest)
+#    print("Number of mislabeled points out of a total %d points : %d , efficiency : "
+#          % (matrixXTest.shape[0],(rateTesting != predict).sum()), ((rateTesting == predict).sum())/matrixXTest.shape[0]*100)
+#    
+    results_MLP_alpha.write(str(alpha))
+    results_MLP_alpha.write(',')
+    results_MLP_alpha.write(str(((rateTesting == predict).sum())/matrixXTest.shape[0]*100))
+    results_MLP_alpha.write('\n')
+    
+    clf = MLPClassifier(solver='sgd', alpha=alpha,
                          hidden_layer_sizes=(100,100), random_state=1)
-clf.fit(matAvgLearn, rateLearning)
+    clf.fit(matAvgLearn, rateLearning)                         
     
-predictZ = clf.predict(matAvgTest)
-print("Number of mislabeled points out of a total %d points : %d , efficiency : "
-          % (matAvgTest.shape[0],(rateTesting != predictZ).sum()), ((rateTesting == predictZ).sum())/matAvgTest.shape[0]*100)
-
+    predictZ = clf.predict(matAvgTest)
+#    print("Number of mislabeled points out of a total %d points : %d , efficiency : "
+#          % (matAvgTest.shape[0],(rateTesting != predictZ).sum()), ((rateTesting == predictZ).sum())/matAvgTest.shape[0]*100)
+    results_MLP_Z_alpha.write(str(alpha))
+    results_MLP_Z_alpha.write(',')
+    results_MLP_Z_alpha.write(str(((rateTesting == predictZ).sum())/matAvgTest.shape[0]*100))
+    results_MLP_Z_alpha.write('\n')
+results_MLP_Z_alpha.close()
+results_MLP_alpha.close()
 ###################################################################
 
 
