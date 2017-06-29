@@ -3,8 +3,6 @@
 import pandas
 import re
 import numpy
-
-
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
@@ -12,11 +10,13 @@ from gensim.models import word2vec
 import logging
 from StemmingHelper import StemmingHelper
 
+#Supprime la ponctuation sur toutes les reviews
 def replacePonctuation(listAllReview):
     for i in range(len(listAllReview)):
         listAllReview[i]=str(re.sub("[^a-zA-Z]"," ",str(listAllReview[i])))
     return listAllReview
    
+#Fonction qui crée le dictionnaire (mot, nombre d'occurences de ce mot dans la liste de reviews)
 def fillDictionary(listAllReview):
     dic={}
     for review in listAllReview:
@@ -29,7 +29,7 @@ def fillDictionary(listAllReview):
     return dic
 
 
-
+#Fonction qui supprime tous les stop words des reviews
 def deleteStopWords(listAllReview, listStopWords):
     for i in range(len(listAllReview)):
         review=str(listAllReview[i]).split()
@@ -37,6 +37,7 @@ def deleteStopWords(listAllReview, listStopWords):
         listAllReview[i]=" ".join(review)    
     return listAllReview
 
+#Application du stemming sur les reviews
 def stemmingReviews(listAllReview):
     for i in range(len(listAllReview)):
         review=str(listAllReview[i]).split()
@@ -44,6 +45,7 @@ def stemmingReviews(listAllReview):
         listAllReview[i]=" ".join(review)    
     return listAllReview
     
+#Compteur des notes (1, 2, 3, 4, 5) 
 def baseLine(dataframe):
     res = numpy.zeros((1,5))
     print('Based on ', len(dataframe), 'reviews')
@@ -52,18 +54,20 @@ def baseLine(dataframe):
         print('number of ', i,' stars : ', res[0][i-1], ' ', res[0][i-1]/len(dataframe)*100 ,'%')
     return res
 
-
+#Remplit la matrice X
 def fillX(dataFrame, listAllReview):
     for i in range (len(listAllReview)):
         for word in listAllReview[i].split():
             dataFrame[word][i]+=1
     return dataFrame
 
+#Remplit la matrice Y
 def fillY(dataFrame, listAllRating):
     for i in range(len(listAllRating)):
         dataFrame[listAllRating[i]-1][i]=1
     return dataFrame 
 
+#Verifie les predictions en se servant d'un ensemble de test
 def verifyPredict(predicted, rateTesting):
     goodClassification=0
     badClassification=0
@@ -76,6 +80,7 @@ def verifyPredict(predicted, rateTesting):
             badClassification+=1
     return [goodClassification/nbClassification, badClassification/nbClassification]
 
+#Calcul la moyenne de chaque review en utilisant les vecteurs de word2vec et les mots de chaque review
 def averageReview(dicZ, matrixX):
     matAvg=[]
     for i in range(matrixX.shape[0]):
@@ -91,12 +96,14 @@ def averageReview(dicZ, matrixX):
         matAvg.append(avg)
     return matAvg
 
+#Remplit la matrice Z (dictionnaire (mot, sémantique sous forme de vecteur))
 def fillZ(dic, wordVectors, listWords):
     for i in range(len(listWords)):
         if(listWords[i] in wordVectors.vocab.keys()):
             dic[listWords[i]]=wordVectors[listWords[i]]
     return dic
 
+#Normalise la matrice pour ne plus avoir de valeurs négatives
 def normalizeMatrix(mat):
     matNorm=numpy.reshape(mat,(mat.shape[0], mat.shape[1]))
     
@@ -113,8 +120,8 @@ def normalizeMatrix(mat):
         for j in range (mat.shape[1]):
             matNorm[j][i]=(mat[j][i]-minValue)/(maxValue-minValue)
     return matNorm
-    
-            
+
+       
 
 listStopWords=[]
 
@@ -127,77 +134,69 @@ filePantenecsv=pandas.read_csv('datasets_clean/reviews_pantene.csv')#,sep='\t', 
 fileTampaxcsv=pandas.read_csv('datasets_clean/reviews_tampax.csv')#,sep='\t', encoding='latin-1')
 
 
-#frames = [fileAlwayscsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
 frames = [fileAlwayscsv, fileGillettecsv, fileOralbcsv, filePantenecsv, fileTampaxcsv]
 alldataFrame = pandas.concat(frames)
 alldataFrame = alldataFrame.sample(frac= 1)
+#Creation des listes de notes et de reviews
 listAllReview=list(alldataFrame['review'].astype(str))
 listAllRating=list(alldataFrame['user_rating'].astype(int))
 
+#Cree la liste pour les stop words
 for row in fileStopWords:
     listStopWords.append(str(row.rstrip('\n')).lower())
 
 
-
+#Preprocessing des reviews
 listAllReview=replacePonctuation(listAllReview)
 listAllReview=deleteStopWords(listAllReview, listStopWords)
 listAllReview = stemmingReviews(listAllReview)
 nbLearning = round(len(listAllReview)*2/3)
 
-reviewLearning=listAllReview[:nbLearning]
 rateLearning=listAllRating[:nbLearning]
-reviewTesting=listAllReview[nbLearning:]
 rateTesting=listAllRating[nbLearning:]
 
 dic=fillDictionary(listAllReview)
-dicLearn=fillDictionary(reviewLearning)
-dicTest=fillDictionary(reviewTesting)
-
+#Creation de la matrice X
 xDataFrame=pandas.DataFrame(index=range(len(listAllReview)), columns=dic.keys())
 xDataFrame=xDataFrame.fillna(0)
-
-yDataFrame=pandas.DataFrame(index=range(len(listAllReview)), columns=range(5))
-yDataFrame=yDataFrame.fillna(0)
-
-
-
 matrixX=fillX(xDataFrame, listAllReview)
 
-matrixY=fillY(yDataFrame, listAllRating)
 
-
+#Separation de la matrice X en matrice d'apprentissage et de test
 matrixXLearn=matrixX[:nbLearning]
 matrixXTest=matrixX[nbLearning:]
 
 from gensim.models.keyedvectors import KeyedVectors
 wordVectors=KeyedVectors.load_word2vec_format('word2vec.txt', binary=False)
-
+#Creation de la matrice (dictionnaire) Z et création de la matrice contenant la moyenne des vecteurs word2vec en utilisant les mots de chaque review
 dicZ={}
 dicZ=fillZ(dicZ, wordVectors, list(dic.keys()))
 matAvg=averageReview(dicZ, matrixX)
 matAvg=pandas.DataFrame(matAvg, columns=list(range(200)))
+#Séparation matrice en matrice d'apprentissage et de test 
 matAvgLearn=matAvg[:nbLearning]
 matAvgTest=matAvg[nbLearning:]
 
-baseLine(alldataFrame)
+#baseLine(alldataFrame)
 
-#############################NAIVE BAYES###########################
+#############################NAIVE BAYES MULTINOMIAL###########################
 
-#model=MultinomialNB().fit(matrixXLearn[list(matrixX)], rateLearning)
-#predicted=model.predict(matrixXTest)
-#
-#listPredict=verifyPredict(predicted, rateTesting)
-#print("Multinomial Naive Bayes:", listPredict[0], " de réussite, ", listPredict[1], " d'échecs.")
-#
-#
-#matAvgNorm=normalizeMatrix(matAvg)
-#matAvgNormLearn=matAvgNorm[:nbLearning]
-#matAvgNormTest=matAvgNorm[nbLearning:]
-#
-#model=MultinomialNB().fit(matAvgNormLearn[list(matAvg)], rateLearning)
-#predicted=model.predict(matAvgNormTest)
-#listPredict=verifyPredict(predicted, rateTesting)
-#print("Multinomial Naive Bayes (Avec Z):", listPredict[0], " de réussite, ", listPredict[1], " d'échecs.")
+#Sans Z
+model=MultinomialNB().fit(matrixXLearn[list(matrixX)], rateLearning)
+predicted=model.predict(matrixXTest)
+
+listPredictMNBSZ=verifyPredict(predicted, rateTesting)
+print("Multinomial Naive Bayes:", listPredictMNBSZ[0], " de réussite, ", listPredictMNBSZ[1], " d'échecs.")
+
+#Avec Z
+matAvgNorm=normalizeMatrix(matAvg)
+matAvgNormLearn=matAvgNorm[:nbLearning]
+matAvgNormTest=matAvgNorm[nbLearning:]
+
+model=MultinomialNB().fit(matAvgNormLearn[list(matAvg)], rateLearning)
+predicted=model.predict(matAvgNormTest)
+listPredictMNBAZ=verifyPredict(predicted, rateTesting)
+print("Multinomial Naive Bayes (Avec Z):", listPredictMNBAZ[0], " de réussite, ", listPredictMNBAZ[1], " d'échecs.")
 
 ###################################################################
 
@@ -205,198 +204,55 @@ baseLine(alldataFrame)
 
 ############################Neural Network########################
 
-
+#Sans Z
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-clf = MLPClassifier(solver='sgd', alpha=1e-3,
-                         hidden_layer_sizes=(100,100), random_state=1)
-clf.fit(matrixXLearn, rateLearning)
-    
+clf = MLPClassifier(solver='sgd', alpha=1e-5,
+                     hidden_layer_sizes=(5, 2), random_state=1)
+clf.fit(matrixXLearn, rateLearning)                         
+MLPClassifier(activation='relu', alpha=1e-05, batch_size='auto',
+       beta_1=0.9, beta_2=0.999, early_stopping=False,
+       epsilon=1e-08, hidden_layer_sizes=(5, 2), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=1, shuffle=True,
+       solver='sgd', tol=0.0001, validation_fraction=0.1, verbose=False,
+       warm_start=False)
 predict = clf.predict(matrixXTest)
+predictNNSZ=((rateTesting == predict).sum())/matrixXTest.shape[0]*100
+
 print("Number of mislabeled points out of a total %d points : %d , efficiency : "
-          % (matrixXTest.shape[0],(rateTesting != predict).sum()), ((rateTesting == predict).sum())/matrixXTest.shape[0]*100)
+      % (matrixXTest.shape[0],(rateTesting != predict).sum()), ((rateTesting == predict).sum())/matrixXTest.shape[0]*100)
 
-
-clf = MLPClassifier(solver='sgd', alpha=1e-3,
-                         hidden_layer_sizes=(100,100), random_state=1)
-clf.fit(matAvgLearn, rateLearning)
-    
+#Avec Z
+clf.fit(matAvgLearn, rateLearning)                         
+MLPClassifier(activation='relu', alpha=1e-05, batch_size='auto',
+       beta_1=0.9, beta_2=0.999, early_stopping=False,
+       epsilon=1e-08, hidden_layer_sizes=(5, 2), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=200, momentum=0.9,
+       nesterovs_momentum=True, power_t=0.5, random_state=1, shuffle=True,
+       solver='sgd', tol=0.0001, validation_fraction=0.1, verbose=False,
+       warm_start=False)
 predictZ = clf.predict(matAvgTest)
 print("Number of mislabeled points out of a total %d points : %d , efficiency : "
-          % (matAvgTest.shape[0],(rateTesting != predictZ).sum()), ((rateTesting == predictZ).sum())/matAvgTest.shape[0]*100)
+      % (matAvgTest.shape[0],(rateTesting != predictZ).sum()), ((rateTesting == predictZ).sum())/matAvgTest.shape[0]*100)
+
+predictNNSZ=((rateTesting == predictZ).sum())/matAvgTest.shape[0]*100
 
 ###################################################################
 
 
 ########################### SVM ###########################
+#Sans Z
+from sklearn import svm
+clf=svm.SVC()
+clf.fit(matrixXLearn[list(matrixX)], rateLearning)
+predictedSVM=clf.predict(matrixXTest)
+listPredictSVM=verifyPredict(predictedSVM, rateTesting)
+print("SVM (Sans Z):", listPredictSVM[0], " de réussite, ", listPredictSVM[1], " d'échecs.")
 
-
-#from sklearn.linear_model import SGDClassifier
-#SGDclass = SGDClassifier(loss='log', penalty='l2', alpha=1e-3, n_iter=5, random_state=42)
-#
-#clf = SGDclass.fit(matrixXLearn[list(matrixX)], rateLearning)
-#predictedSVM = clf.predict(matrixXTest)
-#
-#listPredictSVM=verifyPredict(predictedSVM, rateTesting)
-#print("SVM (Sans Z):", listPredictSVM[0], " de réussite, ", listPredictSVM[1], " d'échecs.")
-#
-#SGDclass = SGDClassifier(loss='log', penalty='l2', alpha=1e-3, n_iter=5, random_state=42)
-#clf2 = SGDclass.fit(matAvgLearn[list(matAvg)], rateLearning)
-#predictedSVM = clf2.predict(matAvgTest)
-#
-#listPredictSVM=verifyPredict(predictedSVM, rateTesting)
-#print("SVM (Avec Z):", listPredictSVM[0], " de réussite, ", listPredictSVM[1], " d'échecs.")
-#
-#from sklearn import svm
-#clf=svm.SVC()
-#clf.fit(matrixXLearn[list(matrixX)], rateLearning)
-#predictedSVM=clf.predict(matrixXTest)
-#listPredictSVM=verifyPredict(predictedSVM, rateTesting)
-#print("SVM (Sans Z):", listPredictSVM[0], " de réussite, ", listPredictSVM[1], " d'échecs.")
-#
-#clf2=svm.SVC()
-#clf2.fit(matAvgLearn[list(matAvg)], rateLearning)
-#predictedSVM2=clf2.predict(matAvgTest)
-#listPredictSVM2=verifyPredict(predictedSVM2, rateTesting)
-#print("SVM (Avec Z):", listPredictSVM2[0], " de réussite, ", listPredictSVM2[1], " d'échecs.")
-#
-#for row in fileStopWords:
-#    listStopWords.append(str(row.rstrip('\n')).lower())
-#
-#
-#
-#listAllReview=replacePonctuation(listAllReview)
-##listAllReview=modifyWordPorter(listAllReview)
-#listAllReview=deleteStopWords(listAllReview, listStopWords)
-#listAllReview = stemmingReviews(listAllReview)
-#nbLearning = round(len(listAllReview)*2/3)
-#
-#reviewLearning=listAllReview[:nbLearning]
-#rateLearning=listAllRating[:nbLearning]
-#reviewTesting=listAllReview[nbLearning:]
-#rateTesting=listAllRating[nbLearning:]
-#
-#dic=fillDictionary(listAllReview)
-#dicLearn=fillDictionary(reviewLearning)
-#dicTest=fillDictionary(reviewTesting)
-#
-#xDataFrame=pandas.DataFrame(index=range(len(listAllReview)), columns=dic.keys())
-#xDataFrame=xDataFrame.fillna(0)
-#
-#yDataFrame=pandas.DataFrame(index=range(len(listAllReview)), columns=range(5))
-#yDataFrame=yDataFrame.fillna(0)
-#
-#def fillX(dataFrame, listAllReview):
-#    for i in range (len(listAllReview)):
-#        for word in listAllReview[i].split():
-#            dataFrame[word][i]+=1
-#    return dataFrame
-#
-#
-#matrixX=fillX(xDataFrame, listAllReview)
-#
-#def fillY(dataFrame, listAllRating):
-#    for i in range(len(listAllRating)):
-#        dataFrame[listAllRating[i]-1][i]=1
-#    return dataFrame 
-#
-#matrixY=fillY(yDataFrame, listAllRating)
-#
-#
-#matrixXLearn=matrixX[:nbLearning]
-#matrixXTest=matrixX[nbLearning:]
-#
-##from sklearn.naive_bayes import GaussianNB
-##model=GaussianNB().fit(matrixXLearn[list(matrixX)], rateLearning)
-##predicted=model.predict(matrixXTest)
-
-
-#def verifyPredict(predicted, rateTesting):
-#    goodClassification=0
-#    badClassification=0
-#    nbClassification=0
-#    for i in range (len(predicted)):
-#        nbClassification+=1
-#        if(predicted[i]==rateTesting[i]):
-#            goodClassification+=1
-#        else:
-#            badClassification+=1
-#    return [goodClassification/nbClassification, badClassification/nbClassification]
-#
-#listPredict=verifyPredict(predicted, rateTesting)
-#print(listPredict)
-#print(matrixX.shape)
-
-
-#logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-#
-#
-#
-#
-#clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
-#                     hidden_layer_sizes=(5, 2), random_state=1)
-#clf.fit(matrixXLearn, rateLearning)                         
-#MLPClassifier(activation='relu', alpha=1e-05, batch_size='auto',
-#       beta_1=0.9, beta_2=0.999, early_stopping=False,
-#       epsilon=1e-08, hidden_layer_sizes=(5, 2), learning_rate='constant',
-#       learning_rate_init=0.001, max_iter=200, momentum=0.9,
-#       nesterovs_momentum=True, power_t=0.5, random_state=1, shuffle=True,
-#       solver='lbfgs', tol=0.0001, validation_fraction=0.1, verbose=False,
-#       warm_start=False)
-#predict = clf.predict(matrixXTest)
-#print("Number of mislabeled points out of a total %d points : %d , efficiency : "
-#      % (matrixXTest.shape[0],(rateTesting != predict).sum()), ((rateTesting == predict).sum())/matrixXTest.shape[0]*100)
-
-#import gensim
-#from gensim.keyedvectors import KeyedVectors
-#word_vectors=KeyedVectors.load_word2vec_format('word2vec.txt', binary=False)
-#print(word_vectors[0])
-
-#model=gensim.models.KeyedVectors.load_word2vec_format('word2vec.txt', binary=False)
-
-
-
-
-
-#from sklearn.naive_bayes import MultinomialNB
-#model=MultinomialNB().fit(matrixXLearn[list(matrixX)], rateLearning)
-#predicted=model.predict(matrixXTest)
-#
-
-
-
-def verifyPredict(predicted, rateTesting):
-    goodClassification=0
-    badClassification=0
-    nbClassification=0
-    for i in range (len(predicted)):
-        nbClassification+=1
-        if(predicted[i]==rateTesting[i]):
-            goodClassification+=1
-        else:
-            badClassification+=1
-    return [goodClassification/nbClassification, badClassification/nbClassification]
-
-
-#listPredict=verifyPredict(predicted, rateTesting)
-#print(listPredict)
-
-
-#from sklearn import linear_model
-#reg = linear_model.LinearRegression()
-#reg.fit (matrixXLearn, rateLearning)
-#
-#reg.coef_
-#
-
-
-
-#from gensim.models.keyedvectors import KeyedVectors
-#wordVectors=KeyedVectors.load_word2vec_format('word2vec.txt', binary=False)
-#print('lkshjflkguhekurhhf' in wordVectors.vocab.keys())
-
-def fillZ(dic, wordVectors, listWords):
-    for i in range(len(listWords)):
-        if(StemmingHelper.original_form(listWords[i]) in wordVectors.vocab.keys()):
-            dic[listWords[i]]=wordVectors[StemmingHelper.original_form(listWords[i])]
-    return dic
+#Avec Z
+clf2=svm.SVC()
+clf2.fit(matAvgLearn[list(matAvg)], rateLearning)
+predictedSVM2=clf2.predict(matAvgTest)
+listPredictSVM2=verifyPredict(predictedSVM2, rateTesting)
+print("SVM (Avec Z):", listPredictSVM2[0], " de réussite, ", listPredictSVM2[1], " d'échecs.")
 
